@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Football Manager | Spring Boot + MongoDB</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root{--fm:#075c3a;--fm2:#0b7a4d;--soft:#f4f7f6;--ink:#17211b}
+    body{background:var(--soft);color:var(--ink)}
+    .sidebar{min-height:100vh;background:linear-gradient(180deg,#063d2a,#075c3a);color:#fff}
+    .brand{font-weight:800;font-size:1.35rem}.brand i{color:#75e0aa}
+    .nav-pills .nav-link{color:#d9f3e6;text-align:left}.nav-pills .nav-link.active,.nav-pills .nav-link:hover{background:#fff;color:var(--fm)}
+    .hero{background:linear-gradient(135deg,#075c3a,#0b8b59);color:#fff;border-radius:1rem}
+    .card{border:0;box-shadow:0 8px 25px rgba(0,0,0,.06)}
+    .stat{border-left:4px solid var(--fm2)}
+    .club-card{cursor:pointer;transition:.15s}.club-card:hover{transform:translateY(-2px)}
+    .crest{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:#dff6ea;color:var(--fm);font-weight:800}
+    .badge-rel{font-size:.72rem}.table td,.table th{vertical-align:middle}
+    .empty{padding:2rem;text-align:center;color:#77827b}.sticky-detail{position:sticky;top:1rem}
+    .toast-container{z-index:1090}.modal-header{background:linear-gradient(135deg,#063d2a,#087548);color:#fff}.modal-header .btn-close{filter:invert(1)}
+    .relation-box{border:1px solid #e3e9e5;border-radius:.75rem;padding:1rem;background:#fff}
+    @media(max-width:991px){.sidebar{min-height:auto}.sticky-detail{position:static}}
+  </style>
+</head>
+<body>
+<div class="container-fluid">
+  <div class="row">
+    <aside class="col-lg-2 sidebar p-3">
+      <div class="brand mb-4"><i class="bi bi-trophy-fill me-2"></i>Football Manager</div>
+      <div class="small text-white-50 mb-2">GESTIÓN</div>
+      <nav id="nav" class="nav nav-pills flex-lg-column gap-1"></nav>
+      <hr class="border-light opacity-25">
+      <div class="small text-white-50">Spring Boot + MongoDB</div>
+      <div class="small mt-2">@DocumentReference</div>
+    </aside>
+
+    <main class="col-lg-10 p-3 p-lg-4">
+      <div id="app"></div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal único: CRUD y relaciones usan el mismo formulario y UN solo submit handler. -->
+<div class="modal fade" id="mainModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div><div id="modalSubtitle" class="small opacity-75"></div><h5 id="modalTitle" class="modal-title"></h5></div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="mainForm">
+        <div id="modalBody" class="modal-body"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button id="modalSave" type="submit" class="btn btn-success"><i class="bi bi-check2 me-1"></i>Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed top-0 end-0 p-3">
+  <div id="toast" class="toast" role="alert"><div class="toast-header"><i class="bi bi-check-circle-fill text-success me-2"></i><strong class="me-auto">Football Manager</strong><button class="btn-close" data-bs-dismiss="toast"></button></div><div id="toastText" class="toast-body"></div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const API_BASE=(location.protocol==='file:' ? 'http://localhost:8080/api' : '/api');
+if(location.protocol==='file:'){
+  document.addEventListener('DOMContentLoaded',()=>{
+    const target='http://localhost:8080/';
+    const note=document.createElement('div');
+    note.className='position-fixed top-0 start-0 end-0 alert alert-warning rounded-0 text-center mb-0';
+    note.innerHTML='Esta interfaz pertenece a Spring Boot. Redirigiendo a <b>http://localhost:8080/</b>...';
+    document.body.prepend(note);
+    setTimeout(()=>{location.href=target},500);
+  });
+}
+const state={view:'clubes',selected:null,clubes:[],jugadores:[],entrenadores:[],asociaciones:[],competiciones:[]};
+const modal=new bootstrap.Modal(document.getElementById('mainModal'));
+let modalState={type:null,key:null,id:null,clubId:null,relation:null};
+
+const $=s=>document.querySelector(s);
+const idOf=o=>o?.id||o?._id;
+const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const nameOf=o=>`${o?.nombre||''} ${o?.apellido||''}`.trim();
+const initials=s=>(String(s||'?').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('')).toUpperCase();
+const money=n=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(n||0));
+const dateVal=v=>v?String(v).slice(0,10):'';
+
+function notify(message,error=false){
+  $('#toastText').textContent=message;
+  const t=$('#toast'); t.classList.toggle('text-danger',error);
+  bootstrap.Toast.getOrCreateInstance(t,{delay:4500}).show();
+}
+
+async function api(path,options={}){
+  if(!path || path.includes('/undefined') || path.includes('undefined')) throw new Error('La operación generó una URL inválida.');
+  const url=path.startsWith('http://')||path.startsWith('https://') ? path : `${API_BASE}${path.startsWith('/')?'':'/'}${path}`;
+  const opts={...options,headers:{'Content-Type':'application/json',...(options.headers||{})}};
+  console.log(`[API] ${opts.method||'GET'} ${url}`,opts.body||'');
+  const r=await fetch(url,opts);
+  if(r.status===204)return null;
+  let data=null; try{data=await r.json()}catch{}
+  if(!r.ok){
+    let msg=data?.message||data?.error||`Error HTTP ${r.status}`;
+    if(data?.errors) msg+=' | '+Object.entries(data.errors).map(([k,v])=>`${k}: ${v}`).join(' | ');
+    throw new Error(msg);
+  }
+  return data;
+}
+
+function relationOwners(key,id){
+  if(key==='entrenadores') return state.clubes.filter(c=>idOf(c.entrenador)===id);
+  if(key==='jugadores') return state.clubes.filter(c=>(c.jugadores||[]).some(j=>idOf(j)===id));
+  if(key==='asociaciones') return state.clubes.filter(c=>idOf(c.asociacion)===id);
+  if(key==='competiciones') return state.clubes.filter(c=>(c.competiciones||[]).some(x=>idOf(x)===id));
+  return [];
+}
+function clubByPlayer(id){return state.clubes.find(c=>(c.jugadores||[]).some(j=>idOf(j)===id));}
+function clubByCoach(id){return state.clubes.find(c=>idOf(c.entrenador)===id);}
+
+const models={
+  jugadores:{title:'Jugadores',sing:'jugador',fields:[['nombre','Nombre','text'],['apellido','Apellido','text'],['numero','Número','number'],['posicion','Posición','text']]},
+  entrenadores:{title:'Entrenadores',sing:'entrenador',fields:[['nombre','Nombre','text'],['apellido','Apellido','text'],['edad','Edad','number'],['nacionalidad','Nacionalidad','text']]},
+  asociaciones:{title:'Asociaciones',sing:'asociación',fields:[['nombre','Nombre','text'],['pais','País','text'],['presidente','Presidente','text']]},
+  competiciones:{title:'Competiciones',sing:'competición',fields:[['nombre','Nombre','text'],['montoPremio','Premio','number'],['fechaInicio','Fecha de inicio','date'],['fechaFin','Fecha de fin','date']]}
+};
+
+async function load(){
+  const keys=['clubes','jugadores','entrenadores','asociaciones','competiciones'];
+  try{
+    const data=await Promise.all(keys.map(k=>api(`/${k}`)));
+    keys.forEach((k,i)=>state[k]=Array.isArray(data[i])?data[i]:[]);
+    if(!state.selected || !state.clubes.some(c=>idOf(c)===state.selected)) state.selected=idOf(state.clubes[0])||null;
+    render();
+  }catch(e){notify('No se pudo conectar con la API: '+e.message,true)}
+}
+
+function renderNav(){
+  const items=[['clubes','Clubes','bi-shield-fill'],...Object.entries(models).map(([k,m])=>[k,m.title,'bi-collection-fill'])];
+  $('#nav').innerHTML=items.map(([k,t,icon])=>`<button class="nav-link ${state.view===k?'active':''}" onclick="state.view='${k}';render()"><i class="bi ${icon} me-2"></i>${t}<span class="badge bg-light text-dark float-end">${state[k].length}</span></button>`).join('');
+}
+function render(){renderNav();state.view==='clubes'?renderClubs():renderEntity(state.view)}
+
+function renderClubs(){
+  const c=state.clubes.find(x=>idOf(x)===state.selected);
+  $('#app').innerHTML=`
+  <div class="hero p-4 mb-4"><div class="d-flex justify-content-between align-items-center gap-3 flex-wrap"><div><div class="small text-white-50">PANEL DE ADMINISTRACIÓN</div><h1 class="h2 mb-1">Clubes y relaciones</h1><p class="mb-0 text-white-50">Gestiona clubes, jugadores, entrenadores, asociaciones y competiciones.</p></div><button class="btn btn-light" onclick="openClub()"><i class="bi bi-plus-lg me-1"></i>Nuevo club</button></div></div>
+  <div class="row g-4">
+    <div class="col-xl-4"><div class="card"><div class="card-header bg-white fw-bold">Clubes <span class="badge text-bg-success">${state.clubes.length}</span></div><div class="list-group list-group-flush">${state.clubes.map(c=>`<button class="list-group-item list-group-item-action ${idOf(c)===state.selected?'active':''}" onclick="state.selected='${esc(idOf(c))}';render()"><div class="d-flex align-items-center gap-3"><div class="crest">${esc(initials(c.nombre))}</div><div class="text-start flex-grow-1"><strong>${esc(c.nombre)}</strong><div class="small ${idOf(c)===state.selected?'text-white-50':'text-muted'}">${(c.jugadores||[]).length} jugadores · ${(c.competiciones||[]).length} competiciones</div></div></div></button>`).join('')||`<div class="empty">No hay clubes.</div>`}</div></div></div>
+    <div class="col-xl-8">${c?renderClubDetail(c):`<div class="card empty">Selecciona un club.</div>`}</div>
+  </div>`;
+}
+
+function renderClubDetail(c){
+  const coachId=idOf(c.entrenador);
+  const freeCoaches=state.entrenadores.filter(e=>!clubByCoach(idOf(e))||idOf(clubByCoach(idOf(e)))===idOf(c));
+  const freePlayers=state.jugadores.filter(j=>!clubByPlayer(idOf(j)));
+  const availableComps=state.competiciones.filter(k=>!(c.competiciones||[]).some(x=>idOf(x)===idOf(k)));
+  return `<div class="card sticky-detail"><div class="card-body">
+    <div class="d-flex align-items-center gap-3 flex-wrap mb-4"><div class="crest">${esc(initials(c.nombre))}</div><div class="flex-grow-1"><h2 class="h4 mb-1">${esc(c.nombre)}</h2><div class="small text-muted">ID: ${esc(idOf(c))}</div></div><button class="btn btn-outline-primary btn-sm" onclick="openClub('${esc(idOf(c))}')"><i class="bi bi-pencil me-1"></i>Editar</button><button class="btn btn-outline-danger btn-sm" onclick="deleteClub('${esc(idOf(c))}')"><i class="bi bi-trash me-1"></i>Eliminar</button></div>
+    <div class="row g-3">
+      <div class="col-md-6"><div class="relation-box h-100"><div class="d-flex justify-content-between mb-2"><strong>Entrenador</strong><span class="badge text-bg-warning badge-rel">1:1</span></div>${c.entrenador?`<div class="d-flex align-items-center gap-2 mb-3"><div class="crest">${esc(initials(nameOf(c.entrenador)))}</div><div><strong>${esc(nameOf(c.entrenador))}</strong><div class="small text-muted">${esc(c.entrenador.edad)} años · ${esc(c.entrenador.nacionalidad)}</div></div></div><button class="btn btn-outline-secondary btn-sm" onclick="relation('${esc(idOf(c))}','entrenador','remove')">Desvincular</button>`:`<div class="text-muted mb-3">Sin entrenador asignado.</div><button class="btn btn-success btn-sm" onclick="relation('${esc(idOf(c))}','entrenador','add')" ${freeCoaches.length?'':'disabled'}><i class="bi bi-person-plus me-1"></i>Asignar entrenador</button>`}</div></div>
+      <div class="col-md-6"><div class="relation-box h-100"><div class="d-flex justify-content-between mb-2"><strong>Asociación</strong><span class="badge text-bg-primary badge-rel">N:1</span></div>${c.asociacion?`<strong>${esc(c.asociacion.nombre)}</strong><div class="small text-muted mb-3">${esc(c.asociacion.pais||'')} · ${esc(c.asociacion.presidente||'')}</div>`:`<div class="text-muted mb-3">Sin asociación.</div>`}<button class="btn btn-outline-primary btn-sm" onclick="relation('${esc(idOf(c))}','asociacion','add')" ${state.asociaciones.length?'':'disabled'}>${c.asociacion?'Cambiar':'Asignar'}</button></div></div>
+      <div class="col-12"><div class="relation-box"><div class="d-flex justify-content-between mb-3"><strong>Jugadores <span class="badge text-bg-success">${(c.jugadores||[]).length}</span></strong><span class="badge text-bg-success badge-rel">1:N</span></div>${(c.jugadores||[]).length?`<div class="table-responsive"><table class="table table-sm"><thead><tr><th>#</th><th>Jugador</th><th>Posición</th><th></th></tr></thead><tbody>${(c.jugadores||[]).map(j=>`<tr><td><strong>${esc(j.numero)}</strong></td><td>${esc(nameOf(j))}</td><td>${esc(j.posicion||'')}</td><td class="text-end"><button class="btn btn-sm btn-outline-danger" onclick="relation('${esc(idOf(c))}','jugador','remove','${esc(idOf(j))}')"><i class="bi bi-x-lg"></i></button></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty py-3">El club no tiene jugadores.</div>`}<button class="btn btn-success btn-sm" onclick="relation('${esc(idOf(c))}','jugador','add')" ${freePlayers.length?'':'disabled'}><i class="bi bi-person-plus me-1"></i>Agregar jugador</button></div></div>
+      <div class="col-12"><div class="relation-box"><div class="d-flex justify-content-between mb-3"><strong>Competiciones <span class="badge text-bg-purple bg-secondary">${(c.competiciones||[]).length}</span></strong><span class="badge text-bg-secondary badge-rel">N:M</span></div>${(c.competiciones||[]).length?`<div class="d-flex flex-wrap gap-2 mb-3">${c.competiciones.map(k=>`<span class="badge rounded-pill text-bg-light border text-dark p-2">🏆 ${esc(k.nombre)} · ${money(k.montoPremio)} <button class="btn btn-sm p-0 ms-1 text-danger" onclick="relation('${esc(idOf(c))}','competicion','remove','${esc(idOf(k))}')">×</button></span>`).join('')}</div>`:`<div class="empty py-3">No participa en competiciones.</div>`}<button class="btn btn-success btn-sm" onclick="relation('${esc(idOf(c))}','competicion','add')" ${availableComps.length?'':'disabled'}><i class="bi bi-trophy me-1"></i>Agregar competición</button></div></div>
+    </div>
+  </div></div>`;
+}
+
+function renderEntity(key){
+  const m=models[key];
+  $('#app').innerHTML=`<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4"><div><h1 class="h2 mb-1">${m.title}</h1><p class="text-muted mb-0">Crear, consultar, actualizar y eliminar ${m.title.toLowerCase()}.</p></div><button class="btn btn-success" onclick="openEntity('${key}')"><i class="bi bi-plus-lg me-1"></i>Nuevo ${m.sing}</button></div><div class="row g-3">${state[key].map(o=>{const owners=relationOwners(key,idOf(o));return `<div class="col-md-6 col-xl-4"><div class="card h-100"><div class="card-body"><div class="d-flex align-items-center gap-3 mb-3"><div class="crest">${esc(initials(key==='jugadores'?nameOf(o):o.nombre))}</div><div><h3 class="h6 mb-1">${esc(key==='jugadores'?`#${o.numero} ${nameOf(o)}`:key==='entrenadores'?nameOf(o):o.nombre)}</h3><small class="text-muted">${esc(idOf(o))}</small></div></div>${entityDetails(key,o)}<hr><div class="small text-muted mb-2">Relacionado con</div>${owners.length?owners.map(c=>`<span class="badge text-bg-success me-1">${esc(c.nombre)}</span>`).join(''):`<span class="badge text-bg-light border text-dark">Libre / sin clubes</span>`}</div><div class="card-footer bg-white d-flex gap-2"><button class="btn btn-outline-primary btn-sm flex-fill" onclick="openEntity('${key}','${esc(idOf(o))}')">Editar</button><button class="btn btn-outline-danger btn-sm" onclick="deleteEntity('${key}','${esc(idOf(o))}')">Eliminar</button></div></div></div>`}).join('')||`<div class="col-12"><div class="card empty">No hay registros.</div></div>`}</div>`;
+}
+function entityDetails(k,o){if(k==='jugadores')return `<div class="small"><b>Posición:</b> ${esc(o.posicion||'Sin definir')}</div>`;if(k==='entrenadores')return `<div class="small"><b>Edad:</b> ${esc(o.edad)} · <b>Nacionalidad:</b> ${esc(o.nacionalidad||'Sin definir')}</div>`;if(k==='asociaciones')return `<div class="small"><b>País:</b> ${esc(o.pais||'')}<br><b>Presidente:</b> ${esc(o.presidente||'')}</div>`;return `<div class="small"><b>Premio:</b> ${money(o.montoPremio)}<br><b>Inicio:</b> ${esc(dateVal(o.fechaInicio))}<br><b>Fin:</b> ${esc(dateVal(o.fechaFin))}</div>`}
+
+function fieldsHtml(fields,obj={}){return fields.map(([k,label,type])=>`<div class="mb-3"><label class="form-label fw-semibold">${label}</label><input class="form-control" name="${k}" type="${type}" value="${esc(type==='date'?dateVal(obj[k]):obj[k]??'')}" ${k==='numero'||k==='edad'||k==='montoPremio'?'min="0"':''} required></div>`).join('')}
+
+function openEntity(key,id){
+  const obj=id?state[key].find(x=>idOf(x)===id):{}; modalState={type:'crud',key,id:id||null};
+  $('#modalSubtitle').textContent='CRUD · API REST';$('#modalTitle').textContent=`${id?'Editar':'Nuevo'} ${models[key].sing}`;$('#modalSave').innerHTML='<i class="bi bi-check2 me-1"></i>Guardar';$('#modalBody').innerHTML=fieldsHtml(models[key].fields,obj);modal.show();
+}
+function openClub(id){
+  const c=id?state.clubes.find(x=>idOf(x)===id):{};modalState={type:'club',id:id||null};
+  $('#modalSubtitle').textContent='CRUD · Club';$('#modalTitle').textContent=id?'Editar club':'Nuevo club';$('#modalSave').innerHTML='<i class="bi bi-check2 me-1"></i>Guardar';
+  $('#modalBody').innerHTML=`<div class="mb-3"><label class="form-label fw-semibold">Nombre</label><input class="form-control" name="nombre" required value="${esc(c.nombre||'')}"></div><div class="mb-3"><label class="form-label fw-semibold">Entrenador · 1:1</label><select class="form-select" name="entrenadorId"><option value="">Sin entrenador</option>${state.entrenadores.map(e=>{const owner=clubByCoach(idOf(e));const disabled=owner&&idOf(owner)!==id;return `<option value="${esc(idOf(e))}" ${idOf(c.entrenador)===idOf(e)?'selected':''} ${disabled?'disabled':''}>${esc(nameOf(e))}${disabled?' · ocupado':''}</option>`}).join('')}</select></div><div class="mb-3"><label class="form-label fw-semibold">Asociación · N:1</label><select class="form-select" name="asociacionId"><option value="">Sin asociación</option>${state.asociaciones.map(a=>`<option value="${esc(idOf(a))}" ${idOf(c.asociacion)===idOf(a)?'selected':''}>${esc(a.nombre)}</option>`).join('')}</select></div><div class="mb-3"><label class="form-label fw-semibold">Jugadores · 1:N</label><div class="border rounded p-2" style="max-height:220px;overflow:auto">${state.jugadores.map(j=>{const owner=clubByPlayer(idOf(j));const disabled=owner&&idOf(owner)!==id;return `<div class="form-check"><input class="form-check-input" type="checkbox" name="jugadoresIds" value="${esc(idOf(j))}" ${((c.jugadores||[]).some(x=>idOf(x)===idOf(j)))?'checked':''} ${disabled?'disabled':''}><label class="form-check-label">#${esc(j.numero)} ${esc(nameOf(j))}${disabled?' · ocupado':''}</label></div>`}).join('')||'<span class="text-muted">No hay jugadores.</span>'}</div></div><div><label class="form-label fw-semibold">Competiciones · N:M</label><div class="border rounded p-2" style="max-height:180px;overflow:auto">${state.competiciones.map(k=>`<div class="form-check"><input class="form-check-input" type="checkbox" name="competicionesIds" value="${esc(idOf(k))}" ${((c.competiciones||[]).some(x=>idOf(x)===idOf(k)))?'checked':''}><label class="form-check-label">${esc(k.nombre)}</label></div>`).join('')||'<span class="text-muted">No hay competiciones.</span>'}</div></div>`;modal.show();
+}
+
+function relation(clubId,type,action,entityId=null){
+  const labels={entrenador:'entrenador',jugador:'jugador',asociacion:'asociación',competicion:'competición'};
+  if(action==='remove'){
+    const routes={entrenador:['DELETE',`/clubes/${clubId}/entrenador`],jugador:['DELETE',`/clubes/${clubId}/jugadores/${entityId}`],competicion:['DELETE',`/clubes/${clubId}/competiciones/${entityId}`]};
+    if(type==='asociacion'){notify('La API no expone una operación DELETE para asociación. Puedes cambiarla desde el botón Asignar.',true);return;}
+    const [method,path]=routes[type];if(!confirm(`¿Desvincular ${labels[type]}?`))return;api(path,{method}).then(()=>load()).then(()=>notify('Relación actualizada.')).catch(e=>notify(e.message,true));return;
+  }
+  let list=[];
+  if(type==='entrenador')list=state.entrenadores.filter(e=>!clubByCoach(idOf(e))||idOf(clubByCoach(idOf(e)))===clubId);
+  if(type==='jugador')list=state.jugadores.filter(j=>!clubByPlayer(idOf(j)));
+  if(type==='asociacion')list=state.asociaciones;
+  if(type==='competicion'){const c=state.clubes.find(x=>idOf(x)===clubId);list=state.competiciones.filter(k=>!(c?.competiciones||[]).some(x=>idOf(x)===idOf(k)));}
+  if(!list.length){notify('No hay registros disponibles para esta relación.',true);return;}
+  modalState={type:'relation',clubId,relation:type};
+  $('#modalSubtitle').textContent='RELACIÓN MONGODB';$('#modalTitle').textContent=`${action==='add'?'Asignar':'Cambiar'} ${labels[type]}`;$('#modalSave').innerHTML='<i class="bi bi-check2 me-1"></i>Guardar';
+  $('#modalBody').innerHTML=`<label class="form-label fw-semibold">Selecciona ${type==='jugador'?'un jugador':type==='entrenador'?'un entrenador':type==='asociacion'?'una asociación':'una competición'}</label><select class="form-select" name="relationId" required><option value="">-- Seleccionar --</option>${list.map(x=>`<option value="${esc(idOf(x))}">${esc(type==='jugador'?`#${x.numero} ${nameOf(x)}`:type==='entrenador'?nameOf(x):x.nombre)}</option>`).join('')}</select>`;modal.show();
+}
+
+async function handleSubmit(e){
+  e.preventDefault();
+  const fd=new FormData(e.target);const b=$('#modalSave');const old=b.innerHTML;b.disabled=true;
+  try{
+    if(modalState.type==='relation'){
+      const rid=fd.get('relationId');if(!rid)throw new Error('Debes seleccionar un registro.');
+      const map={entrenador:['PUT',`/clubes/${modalState.clubId}/entrenador/${rid}`],jugador:['POST',`/clubes/${modalState.clubId}/jugadores/${rid}`],asociacion:['PUT',`/clubes/${modalState.clubId}/asociacion/${rid}`],competicion:['POST',`/clubes/${modalState.clubId}/competiciones/${rid}`]};
+      const [method,path]=map[modalState.relation];await api(path,{method});
+      modal.hide();await load();notify('Relación guardada correctamente.');return;
+    }
+    if(modalState.type==='club'){
+      const body={nombre:fd.get('nombre'),entrenadorId:fd.get('entrenadorId')||null,asociacionId:fd.get('asociacionId')||null,jugadoresIds:fd.getAll('jugadoresIds'),competicionesIds:fd.getAll('competicionesIds')};
+      const r=await api(modalState.id?`/clubes/${modalState.id}`:'/clubes',{method:modalState.id?'PUT':'POST',body:JSON.stringify(body)});state.selected=idOf(r)||state.selected;modal.hide();await load();notify(modalState.id?'Club actualizado.':'Club creado.');return;
+    }
+    const key=modalState.key,m=models[key];const body={};m.fields.forEach(([k,,t])=>{body[k]=['number'].includes(t)?Number(fd.get(k)):fd.get(k)});
+    await api(modalState.id?`/${key}/${modalState.id}`:`/${key}`,{method:modalState.id?'PUT':'POST',body:JSON.stringify(body)});modal.hide();await load();notify(modalState.id?'Registro actualizado.':'Registro creado.');
+  }catch(err){notify(err.message,true)}finally{b.disabled=false;b.innerHTML=old}
+}
+$('#mainForm').addEventListener('submit',handleSubmit);
+
+async function deleteEntity(key,id){if(!confirm('¿Eliminar este registro?'))return;try{await api(`/${key}/${id}`,{method:'DELETE'});await load();notify('Registro eliminado.')}catch(e){notify(e.message,true)}}
+async function deleteClub(id){if(!confirm('Eliminar el club? La API puede eliminar también sus relaciones en cascada según su lógica.'))return;try{await api(`/clubes/${id}`,{method:'DELETE'});state.selected=null;await load();notify('Club eliminado.')}catch(e){notify(e.message,true)}}
+
+load();
+</script>
+</body>
+</html>
