@@ -1,0 +1,82 @@
+@base = http://localhost:8080/api
+
+### Listar clubes (con entrenador, jugadores, asociacion y competiciones resueltos)
+GET {{base}}/clubes
+
+### ---------- Crear documentos sueltos ----------
+
+### Entrenador
+POST {{base}}/entrenadores
+Content-Type: application/json
+
+{ "nombre": "Pedro", "apellido": "Salazar", "edad": 49, "nacionalidad": "Colombiana" }
+
+### Jugador 1
+POST {{base}}/jugadores
+Content-Type: application/json
+
+{ "nombre": "Kevin", "apellido": "Mejia", "numero": 7, "posicion": "Extremo" }
+
+### Jugador 2
+POST {{base}}/jugadores
+Content-Type: application/json
+
+{ "nombre": "Jorge", "apellido": "Arias", "numero": 5, "posicion": "Volante" }
+
+### Asociacion
+GET {{base}}/asociaciones
+
+### Competicion
+POST {{base}}/competiciones
+Content-Type: application/json
+
+{ "nombre": "Copa Sudamericana", "montoPremio": 6000000, "fechaInicio": "2026-03-04", "fechaFin": "2026-11-22" }
+
+### ---------- Crear club con todas las relaciones ----------
+### Reemplaza los ids por los que devolvieron las peticiones anteriores
+POST {{base}}/clubes
+Content-Type: application/json
+
+{
+  "nombre": "Atletico Nacional",
+  "entrenadorId": "ID_ENTRENADOR",
+  "jugadoresIds": ["ID_JUGADOR_1", "ID_JUGADOR_2"],
+  "asociacionId": "ID_ASOCIACION",
+  "competicionesIds": ["ID_COMPETICION"]
+}
+
+### ---------- Operaciones por relacion ----------
+@club = ID_CLUB
+
+### 1:1 asignar entrenador
+PUT {{base}}/clubes/{{club}}/entrenador/ID_ENTRENADOR
+
+### 1:1 quitar entrenador
+DELETE {{base}}/clubes/{{club}}/entrenador
+
+### 1:N agregar jugador
+POST {{base}}/clubes/{{club}}/jugadores/ID_JUGADOR
+
+### 1:N quitar jugador
+DELETE {{base}}/clubes/{{club}}/jugadores/ID_JUGADOR
+
+### N:1 asignar asociacion
+PUT {{base}}/clubes/{{club}}/asociacion/ID_ASOCIACION
+
+### N:1 inverso: clubes de una asociacion
+GET {{base}}/asociaciones/ID_ASOCIACION/clubes
+
+### N:M inscribir en competicion
+POST {{base}}/clubes/{{club}}/competiciones/ID_COMPETICION
+
+### N:M inverso: clubes de una competicion
+GET {{base}}/competiciones/ID_COMPETICION/clubes
+
+### N:M retirar de competicion
+DELETE {{base}}/clubes/{{club}}/competiciones/ID_COMPETICION
+
+### Borrar asociacion con clubes -> 409 (ON DELETE NO ACTION)
+DELETE {{base}}/asociaciones/ID_ASOCIACION
+
+### Borrar club -> borra en cascada su entrenador y jugadores
+DELETE {{base}}/clubes/{{club}}

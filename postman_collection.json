@@ -1,0 +1,732 @@
+{
+  "info": {
+    "name": "Liga Futbol API - Relaciones Spring Mongo",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base",
+      "value": "http://localhost:8088/api"
+    },
+    {
+      "key": "clubesId",
+      "value": ""
+    },
+    {
+      "key": "entrenadoresId",
+      "value": ""
+    },
+    {
+      "key": "jugadoresId",
+      "value": ""
+    },
+    {
+      "key": "asociacionesId",
+      "value": ""
+    },
+    {
+      "key": "competicionesId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Entrenadores",
+      "item": [
+        {
+          "name": "Listar entrenador",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/entrenadores",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "entrenadores"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Buscar entrenador",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/entrenadores/{{entrenadoresId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "entrenadores",
+                "{{entrenadoresId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Crear entrenador",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base}}/entrenadores",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "entrenadores"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pedro\",\n  \"apellido\": \"Salazar\",\n  \"edad\": 49,\n  \"nacionalidad\": \"Colombiana\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar entrenador",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base}}/entrenadores/{{entrenadoresId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "entrenadores",
+                "{{entrenadoresId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pedro\",\n  \"apellido\": \"Salazar\",\n  \"edad\": 49,\n  \"nacionalidad\": \"Colombiana\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar entrenador",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base}}/entrenadores/{{entrenadoresId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "entrenadores",
+                "{{entrenadoresId}}"
+              ]
+            },
+            "header": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jugadores",
+      "item": [
+        {
+          "name": "Listar jugador",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/jugadores",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "jugadores"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Buscar jugador",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/jugadores/{{jugadoresId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "jugadores",
+                "{{jugadoresId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Crear jugador",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base}}/jugadores",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "jugadores"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Kevin\",\n  \"apellido\": \"Mejia\",\n  \"numero\": 7,\n  \"posicion\": \"Extremo\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar jugador",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base}}/jugadores/{{jugadoresId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "jugadores",
+                "{{jugadoresId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Kevin\",\n  \"apellido\": \"Mejia\",\n  \"numero\": 7,\n  \"posicion\": \"Extremo\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar jugador",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base}}/jugadores/{{jugadoresId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "jugadores",
+                "{{jugadoresId}}"
+              ]
+            },
+            "header": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "Asociaciones",
+      "item": [
+        {
+          "name": "Listar asociacion",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/asociaciones",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "asociaciones"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Buscar asociacion",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/asociaciones/{{asociacionesId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "asociaciones",
+                "{{asociacionesId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Crear asociacion",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base}}/asociaciones",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "asociaciones"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Federacion Colombiana de Futbol\",\n  \"pais\": \"Colombia\",\n  \"presidente\": \"Ramon Jesurun\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar asociacion",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base}}/asociaciones/{{asociacionesId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "asociaciones",
+                "{{asociacionesId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Federacion Colombiana de Futbol\",\n  \"pais\": \"Colombia\",\n  \"presidente\": \"Ramon Jesurun\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar asociacion",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base}}/asociaciones/{{asociacionesId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "asociaciones",
+                "{{asociacionesId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Clubes de la asociacion (N:1 inverso)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/asociaciones/{{asociacionesId}}/clubes",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "asociaciones",
+                "{{asociacionesId}}",
+                "clubes"
+              ]
+            },
+            "header": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "Competiciones",
+      "item": [
+        {
+          "name": "Listar competicion",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/competiciones",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "competiciones"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Buscar competicion",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/competiciones/{{competicionesId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "competiciones",
+                "{{competicionesId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Crear competicion",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base}}/competiciones",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "competiciones"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Copa Sudamericana\",\n  \"montoPremio\": 6000000,\n  \"fechaInicio\": \"2026-03-04\",\n  \"fechaFin\": \"2026-11-22\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar competicion",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base}}/competiciones/{{competicionesId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "competiciones",
+                "{{competicionesId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Copa Sudamericana\",\n  \"montoPremio\": 6000000,\n  \"fechaInicio\": \"2026-03-04\",\n  \"fechaFin\": \"2026-11-22\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar competicion",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base}}/competiciones/{{competicionesId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "competiciones",
+                "{{competicionesId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Clubes de la competicion (N:M inverso)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/competiciones/{{competicionesId}}/clubes",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "competiciones",
+                "{{competicionesId}}",
+                "clubes"
+              ]
+            },
+            "header": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clubes",
+      "item": [
+        {
+          "name": "Listar club",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/clubes",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "clubes"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Buscar club",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base}}/clubes/{{clubesId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "clubes",
+                "{{clubesId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Crear club",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base}}/clubes",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "clubes"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Atletico Nacional\",\n  \"entrenadorId\": \"{{entrenadoresId}}\",\n  \"jugadoresIds\": [\n    \"{{jugadoresId}}\"\n  ],\n  \"asociacionId\": \"{{asociacionesId}}\",\n  \"competicionesIds\": [\n    \"{{competicionesId}}\"\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar club",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base}}/clubes/{{clubesId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "clubes",
+                "{{clubesId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Atletico Nacional\",\n  \"entrenadorId\": \"{{entrenadoresId}}\",\n  \"jugadoresIds\": [\n    \"{{jugadoresId}}\"\n  ],\n  \"asociacionId\": \"{{asociacionesId}}\",\n  \"competicionesIds\": [\n    \"{{competicionesId}}\"\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar club",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base}}/clubes/{{clubesId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "clubes",
+                "{{clubesId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "1:1 Asignar entrenador",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base}}/clubes/{{clubesId}}/entrenador/{{entrenadoresId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "clubes",
+                "{{clubesId}}",
+                "entrenador",
+                "{{entrenadoresId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "1:1 Quitar entrenador",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base}}/clubes/{{clubesId}}/entrenador",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "clubes",
+                "{{clubesId}}",
+                "entrenador"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "1:N Agregar jugador",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base}}/clubes/{{clubesId}}/jugadores/{{jugadoresId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "clubes",
+                "{{clubesId}}",
+                "jugadores",
+                "{{jugadoresId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "1:N Quitar jugador",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base}}/clubes/{{clubesId}}/jugadores/{{jugadoresId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "clubes",
+                "{{clubesId}}",
+                "jugadores",
+                "{{jugadoresId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "N:1 Asignar asociacion",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base}}/clubes/{{clubesId}}/asociacion/{{asociacionesId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "clubes",
+                "{{clubesId}}",
+                "asociacion",
+                "{{asociacionesId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "N:M Inscribir en competicion",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base}}/clubes/{{clubesId}}/competiciones/{{competicionesId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "clubes",
+                "{{clubesId}}",
+                "competiciones",
+                "{{competicionesId}}"
+              ]
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "N:M Retirar de competicion",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base}}/clubes/{{clubesId}}/competiciones/{{competicionesId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "clubes",
+                "{{clubesId}}",
+                "competiciones",
+                "{{competicionesId}}"
+              ]
+            },
+            "header": []
+          }
+        }
+      ]
+    }
+  ]
+}
